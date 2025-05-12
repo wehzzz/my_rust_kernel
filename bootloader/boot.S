@@ -1,13 +1,19 @@
-.section ".text._start"
-
+.section .text._start
 .global _start
+.type _start, %function
+
+.global kmain
+
 _start:
-    mov x0, #0x09000000
-    mov x1, #'A'
-    strb w1, [x0]
-    b .
-    ldr x30, =STACK_TOP
-    mov sp, x30
-    bl _start
-.hang:
-    b .hang
+    // Init stack
+    ldr x0, =STACK_TOP
+    mov sp, x0
+
+    // Appel à __start (Rust entry point)
+    bl kmain
+
+    // Si __start retourne, boucle infinie
+hang:
+    wfe
+    b hang
+
