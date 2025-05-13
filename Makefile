@@ -21,7 +21,7 @@ BUILD_FLAG     := --$(BUILD_MODE)
 
 # Outils
 AS             := aarch64-linux-gnu-as
-LD             := ld.lld             # Linker fourni par Rust (LLVM lld)
+LD             := aarch64-linux-gnu-ld           # Linker fourni par Rust (LLVM lld)
 OBJCOPY        := aarch64-linux-gnu-objcopy         # ou rust-objcopy si disponible
 CARGO          := cargo
 QEMU           := qemu-system-aarch64
