@@ -1,8 +1,8 @@
 .section ".text._start"
 .global _start
 _start:
-    ldr x0, =STACK_TOP
-    mov sp, x0
+    ldr x30, =STACK_TOP
+    mov sp, x30
     bl kmain
 .hang:
     b .hang
