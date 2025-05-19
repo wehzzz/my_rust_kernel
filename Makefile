@@ -1,69 +1,93 @@
-# Makefile pour bootloader + kernel Rust AArch64 + QEMU
-
 # ----------------------------------------
 # Variables générales
 # ----------------------------------------
-# Répertoire du bootloader et du linker script
-BOOT_DIR       := bootloader
-BOOT_SRC       := $(BOOT_DIR)/boot.S
-LINKER_SCRIPT  := $(BOOT_DIR)/linker.ld
 
-# Répertoire du kernel Rust
-KERNEL_DIR     := kernel
-CARGO_TOML     := $(KERNEL_DIR)/Cargo.toml
+BOOT_DIR           := bootloader
+KERNEL_DIR         := kernel
+CARGO_TOML         := $(KERNEL_DIR)/Cargo.toml
 
-# Cible Rust bare-metal
-TARGET         := aarch64-unknown-none
+TARGET             := aarch64-unknown-none
+BUILD_MODE         := release
+BUILD_FLAG         := --$(BUILD_MODE)
 
-# Configuration de build
-BUILD_MODE     := release
-BUILD_FLAG     := --$(BUILD_MODE)
+AS                 := aarch64-linux-gnu-as
+LD                 := aarch64-linux-gnu-ld
+OBJCOPY            := aarch64-linux-gnu-objcopy
+CARGO              := cargo
+QEMU               := qemu-system-aarch64
 
-# Outils
-AS             := aarch64-linux-gnu-as
-LD             := aarch64-linux-gnu-ld
-OBJCOPY        := aarch64-linux-gnu-objcopy
-CARGO          := cargo
-QEMU           := qemu-system-aarch64
+BOOT_SRC           := $(BOOT_DIR)/boot.S
+LINKER_SCRIPT      := $(BOOT_DIR)/linker.ld
 
-# Noms de fichiers générés
-BOOT_OBJ       := $(BOOT_DIR)/boot.o
-KRNL_ARCHIVE   := kernel/target/$(TARGET)/$(BUILD_MODE)/lib$(notdir $(KERNEL_DIR)).a
-KERNEL_ELF     := kernel.elf
-KERNEL_IMG     := kernel.img
+BOOT_OBJ           := $(BOOT_DIR)/boot.o
+BOOT_ELF           := $(BOOT_DIR)/boot.elf
+BOOT_BIN           := $(BOOT_DIR)/boot.bin
+
+KERNEL_ARCHIVE     := $(KERNEL_DIR)/target/$(TARGET)/$(BUILD_MODE)/libkernel.a
+KERNEL_ELF         := kernel.elf
+KERNEL_IMG         := kernel.img
+
+PFLASH_BIN         := pflash.bin
+PFLASH_SIZE        := 67108864  # 64 MiB
+KERNEL_FLASH_OFFSET:= 1048576  # 1 MiB (0x00100000)
 
 # ----------------------------------------
-# Targets principaux
+# Règles principales
 # ----------------------------------------
+
 .PHONY: all run clean
 
-all: $(KERNEL_IMG)
+all: $(PFLASH_BIN)
 
-# 1) Assembler le boot.S
+# 1. Bootloader
 $(BOOT_OBJ): $(BOOT_SRC)
-	@echo "==> Assemblage de $< → $@"
-	$(AS) $< -o $@
+	@echo "==> Assemblage bootloader"
+	$(AS) -o $@ $<
 
-# 2) Compiler le kernel Rust (staticlib)
-$(KRNL_ARCHIVE): $(CARGO_TOML)
-	@echo "==> Compilation Rust du kernel ($(BUILD_MODE))"
-	$(CARGO) build --manifest-path $(CARGO_TOML) --target $(TARGET) $(BUILD_FLAG)
+$(BOOT_ELF): $(BOOT_OBJ)
+	@echo "==> Linkage bootloader"
+	$(LD) -T $(LINKER_SCRIPT) -o $@ $<
 
-# 3) Lier bootloader + kernel dans un ELF
-$(KERNEL_ELF): $(BOOT_OBJ) $(KRNL_ARCHIVE) $(LINKER_SCRIPT)
-	@echo "==> Linkage → $@"
-	$(LD) -o $@ \
-	  -nostdlib -T $(LINKER_SCRIPT) \
-	  $(BOOT_OBJ) $(KRNL_ARCHIVE)
-
-# 4) Générer l'image binaire brute pour QEMU
-$(KERNEL_IMG): $(KERNEL_ELF)
-	@echo "==> Conversion ELF → binaire brut ($@)"
+$(BOOT_BIN): $(BOOT_ELF)
+	@echo "==> Génération binaire bootloader"
 	$(OBJCOPY) -O binary $< $@
 
-# Nettoyage
-clean:
-	@echo "==> Nettoyage des fichiers générés"
-	rm -f $(BOOT_OBJ) $(KERNEL_ELF) $(KERNEL_IMG)
-	$(CARGO) clean --manifest-path $(CARGO_TOML)
+# 2. Kernel (lib statique compilée avec Rust)
+$(KERNEL_ARCHIVE):
+	@echo "==> Compilation kernel Rust (lib)"
+	$(CARGO) build --manifest-path $(CARGO_TOML) --target $(TARGET) $(BUILD_FLAG)
 
+# 3. Linkage kernel ELF
+$(KERNEL_ELF): $(KERNEL_ARCHIVE) $(LINKER_SCRIPT)
+	@echo "==> Linkage kernel"
+	$(LD) -T $(LINKER_SCRIPT) -o $@ --gc-sections --nostdlib $<
+
+# 4. Extraction image binaire
+$(KERNEL_IMG): $(KERNEL_ELF)
+	@echo "==> Génération binaire kernel"
+	$(OBJCOPY) -O binary $< $@
+
+# 5. Création image flash
+$(PFLASH_BIN): $(BOOT_BIN) $(KERNEL_IMG)
+	@echo "==> Création image pflash (64 MiB)"
+	dd if=/dev/zero of=$@ bs=1 count=0 seek=$(PFLASH_SIZE)
+
+	@echo "==> Insertion bootloader à 0x00000000"
+	dd if=$(BOOT_BIN) of=$@ bs=1 conv=notrunc
+
+	@echo "==> Insertion kernel à 0x00100000"
+	dd if=$(KERNEL_IMG) of=$@ bs=1 seek=$(KERNEL_FLASH_OFFSET) conv=notrunc
+
+# 6. Lancement avec QEMU
+run: $(PFLASH_BIN)
+	@echo "==> Démarrage QEMU depuis pflash"
+	$(QEMU) -M virt -cpu cortex-a53 -nographic \
+	        -drive if=pflash,format=raw,file=$(PFLASH_BIN)
+
+# 7. Nettoyage
+clean:
+	@echo "==> Nettoyage"
+	rm -f $(BOOT_OBJ) $(BOOT_ELF) $(BOOT_BIN)
+	rm -f $(KERNEL_ELF) $(KERNEL_IMG)
+	rm -f $(PFLASH_BIN)
+	$(CARGO) clean --manifest-path $(CARGO_TOML)

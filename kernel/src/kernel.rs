@@ -3,6 +3,8 @@
 #![no_main]
 // use the panic handler
 use core::panic::PanicInfo;
+// we need this in the case we write the same char twice and because of compiler opti
+use core::ptr::write_volatile;
 
 const UART: *mut u8 = 0x0900_0000 as *mut u8;
 
@@ -18,7 +20,7 @@ fn putchar(c: u8) {
     unsafe {
         let uart_fr = (UART as usize + 0x18) as *const u32; // UART Flag Register
         while (*uart_fr & (1 << 5)) != 0 {} // Attendre que le FIFO de transmission soit vide
-        *UART = c;
+        write_volatile(UART, c);
     }
 }
 

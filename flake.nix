@@ -14,15 +14,15 @@
       devShell.x86_64-linux =
         pkgs.callPackage
           (
-            { mkShell, pkg-config, zlib, gcc, glibc, flex, bison, openssl, qemu }:
+            { mkShell, qemu }:
             mkShell {
               # What to use for what ?
               # See https://github.com/NixOS/nixpkgs/pull/50881#issuecomment-440772499
 
-              nativeBuildInputs = [ flex bison pkg-config openssl ];
-              depsBuildBuild = [ gcc qemu ];
+              nativeBuildInputs = [ ];
+              depsBuildBuild = [ qemu ];
               # glibc.static is needed to get static libraries (like -lm) for linker
-              buildInputs = [ zlib glibc.static openssl ];
+              buildInputs = [ ];
             }
           )
           { };
