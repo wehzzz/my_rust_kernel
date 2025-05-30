@@ -1,5 +1,5 @@
 # ----------------------------------------
-# Variables générales
+# Variables
 # ----------------------------------------
 
 BOOT_DIR           := bootloader
@@ -17,11 +17,10 @@ CARGO              := cargo
 QEMU               := qemu-system-aarch64
 
 BOOT_SRC           := $(BOOT_DIR)/boot.S
-LINKER_SCRIPT      := $(BOOT_DIR)/linker.ld
-
 BOOT_OBJ           := $(BOOT_DIR)/boot.o
-BOOT_ELF           := $(BOOT_DIR)/boot.elf
 BOOT_BIN           := $(BOOT_DIR)/boot.bin
+
+LINKER_SCRIPT      := $(KERNEL_DIR)/linker.ld
 
 KERNEL_ARCHIVE     := $(KERNEL_DIR)/target/$(TARGET)/$(BUILD_MODE)/libkernel.a
 KERNEL_ELF         := kernel.elf
@@ -32,42 +31,38 @@ PFLASH_SIZE        := 67108864  # 64 MiB
 KERNEL_FLASH_OFFSET:= 1048576  # 1 MiB (0x00100000)
 
 # ----------------------------------------
-# Règles principales
+# Rules
 # ----------------------------------------
 
 .PHONY: all run clean
 
 all: $(PFLASH_BIN)
 
-# 1. Bootloader
+# Bootloader (assembly -> binary)
 $(BOOT_OBJ): $(BOOT_SRC)
 	@echo "==> Assemblage bootloader"
 	$(AS) -o $@ $<
 
-$(BOOT_ELF): $(BOOT_OBJ)
-	@echo "==> Linkage bootloader"
-	$(LD) -T $(LINKER_SCRIPT) -o $@ $<
-
-$(BOOT_BIN): $(BOOT_ELF)
+$(BOOT_BIN): $(BOOT_OBJ)
 	@echo "==> Génération binaire bootloader"
 	$(OBJCOPY) -O binary $< $@
 
-# 2. Kernel (lib statique compilée avec Rust)
+# 2. Kernel (compiling rlib)
 $(KERNEL_ARCHIVE):
 	@echo "==> Compilation kernel Rust (lib)"
 	$(CARGO) build --manifest-path $(CARGO_TOML) --target $(TARGET) $(BUILD_FLAG)
 
-# 3. Linkage kernel ELF
+# 3. link kernel with linker.ld
 $(KERNEL_ELF): $(KERNEL_ARCHIVE) $(LINKER_SCRIPT)
 	@echo "==> Linkage kernel"
 	$(LD) -T $(LINKER_SCRIPT) -o $@ --gc-sections --nostdlib $<
 
-# 4. Extraction image binaire
+# 4. extract binary from kernel
 $(KERNEL_IMG): $(KERNEL_ELF)
 	@echo "==> Génération binaire kernel"
 	$(OBJCOPY) -O binary $< $@
 
-# 5. Création image flash
+# 5. create flash img
 $(PFLASH_BIN): $(BOOT_BIN) $(KERNEL_IMG)
 	@echo "==> Création image pflash (64 MiB)"
 	dd if=/dev/zero of=$@ bs=1 count=0 seek=$(PFLASH_SIZE)
@@ -78,16 +73,14 @@ $(PFLASH_BIN): $(BOOT_BIN) $(KERNEL_IMG)
 	@echo "==> Insertion kernel à 0x00100000"
 	dd if=$(KERNEL_IMG) of=$@ bs=1 seek=$(KERNEL_FLASH_OFFSET) conv=notrunc
 
-# 6. Lancement avec QEMU
 run: $(PFLASH_BIN)
 	@echo "==> Démarrage QEMU depuis pflash"
 	$(QEMU) -M virt -cpu cortex-a53 -nographic \
 	        -drive if=pflash,format=raw,file=$(PFLASH_BIN)
 
-# 7. Nettoyage
 clean:
 	@echo "==> Nettoyage"
-	rm -f $(BOOT_OBJ) $(BOOT_ELF) $(BOOT_BIN)
+	rm -f $(BOOT_OBJ) $(BOOT_BIN)
 	rm -f $(KERNEL_ELF) $(KERNEL_IMG)
 	rm -f $(PFLASH_BIN)
 	$(CARGO) clean --manifest-path $(CARGO_TOML)

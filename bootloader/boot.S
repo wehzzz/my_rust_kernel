@@ -25,7 +25,7 @@ _start:
     subs x2, x2, #1
     b.ne 1b
 
-    // Sauter à l’entrée du kernel
+    // jump to kernel start
     ldr x1, =RAM_KERNEL_ADDR
     br x1
 

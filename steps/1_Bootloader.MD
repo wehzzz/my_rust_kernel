@@ -10,6 +10,7 @@
 
 ## UART Message - First Bare-Metal Boot
 ### Writing the Bootloader
+
 ### Configuring the Linker Script
 ### Developing a Minimal Rust Kernel
 ### Building the whole thing
