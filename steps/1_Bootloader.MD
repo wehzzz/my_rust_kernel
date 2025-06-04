@@ -1,21 +1,30 @@
 # Writing an OS in Rust: Bootloader #1
 
-## Introduction
+## 1. Introduction
 
-## Setting Up the Development Environment
-### Cross-Compilation
-### Rust Toolchain
+## 2. Development Environment
 
-## Understanding the Boot Process on ARM
+### 2.1 Cross-Compilation
 
-## UART Message - First Bare-Metal Boot
-### Writing the Bootloader
+### 2.2 Rust Toolchain
 
-### Configuring the Linker Script
-### Developing a Minimal Rust Kernel
-### Building the whole thing
-### Testing the Bootloader and Kernel
+## 3. Understanding the Boot Process on ARM
+
+### 3.1 Writing the Bootloader
+
+### 3.2 Configuring the Linker Script
+
+### 3.3 Write Our first rust programm
+
+## 4. First Bare-Metal Boot
+
+### 4.1 Building the whole thing
+
+### 4.2 Testing with QEMU
+
+## 5. Conclusion
 
 ## Sources
+
 - https://jcomes.org/aarch64-os-hello_world
 - https://lowenware.com/blog/aarch64-mmu-programming/

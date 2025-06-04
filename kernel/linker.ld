@@ -32,5 +32,4 @@ SECTIONS {
     TTBR1_SPACE_END = .;
     . = ALIGN(8);
     . = 0x7fff0000;
-    STACK_TOP = .;
 }

@@ -1,31 +1,38 @@
-// we define the symbol _start as the entry point of the program
+// Linux Boot Protocol - AArch64
+// https://docs.kernel.org/arch/arm64/booting.html
+
 .section ".text._start"
 .global _start
 
-// kernel size in byte to copy into the RAM
 .equ KERNEL_SIZE, 360
-// address containing the kernel in the flash
-.equ FLASH_KERNEL_OFFSET,  0x000100000
-// address of the RAM in QEMU where the kernel will be copied
+.equ FLASH_KERNEL_ADDR,  0x000100000
 .equ RAM_KERNEL_ADDR,      0x40080000
+.equ STACK_TOP, 0x40000000
 
 _start:
-    // stack initialization
     ldr x30, =STACK_TOP
     mov sp, x30
 
-    // loading kernel in RAM
-    ldr x0, =FLASH_KERNEL_OFFSET    // source
-    ldr x1, =RAM_KERNEL_ADDR        // destination
-    ldr x2, =KERNEL_SIZE            // size
-
-1:
-    ldrb w3, [x0], #1
-    strb w3, [x1], #1
-    subs x2, x2, #1
-    b.ne 1b
-
-    // jump to kernel start
+    bl _kernel_copy
+    bl _kernel_start
+    
+_kernel_copy:
+    ldr x0, =FLASH_KERNEL_ADDR
     ldr x1, =RAM_KERNEL_ADDR
-    br x1
+    ldr x2, =KERNEL_SIZE
+1:
+    ldr x3, [x0], #8
+    str x3, [x1], #8
+    subs x2, x2, #8
+    b.ne 1b
+    ret
+
+_kernel_start:
+    ldr x0, #0                      // =DTB_ADDR adresse du Device Tree Blob
+    mov x1, #0                      // x1 = réservé (doit être 0)
+    mov x2, #0                      // x2 = réservé (doit être 0)
+    mov x3, #0                      // x3 = réservé (doit être 0)
+
+    ldr x4, =RAM_KERNEL_ADDR
+    br x4
 
