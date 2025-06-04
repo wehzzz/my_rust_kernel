@@ -28,10 +28,10 @@ _kernel_copy:
     ret
 
 _kernel_start:
-    ldr x0, #0                      // =DTB_ADDR adresse du Device Tree Blob
-    mov x1, #0                      // x1 = réservé (doit être 0)
-    mov x2, #0                      // x2 = réservé (doit être 0)
-    mov x3, #0                      // x3 = réservé (doit être 0)
+    ldr x0, #0                      // =DTB_ADDR
+    mov x1, #0
+    mov x2, #0
+    mov x3, #0
 
     ldr x4, =RAM_KERNEL_ADDR
     br x4
