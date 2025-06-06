@@ -62,6 +62,19 @@ $(KERNEL_IMG): $(KERNEL_ELF)
 	@echo "==> Génération binaire kernel"
 	$(OBJCOPY) -O binary $< $@
 
+	@echo "==> Patch image_size dans header Arm64"
+	@filesize=$$(stat -c %s $@); \
+	 printf "$$(printf '\\x%02x' $$(( ($$filesize >> 0)  & 0xFF )))" >  tmp_patch.bin; \
+	 printf "$$(printf '\\x%02x' $$(( ($$filesize >> 8)  & 0xFF )))" >> tmp_patch.bin; \
+	 printf "$$(printf '\\x%02x' $$(( ($$filesize >> 16) & 0xFF )))" >> tmp_patch.bin; \
+	 printf "$$(printf '\\x%02x' $$(( ($$filesize >> 24) & 0xFF )))" >> tmp_patch.bin; \
+	 printf "$$(printf '\\x%02x' $$(( ($$filesize >> 32) & 0xFF )))" >> tmp_patch.bin; \
+	 printf "$$(printf '\\x%02x' $$(( ($$filesize >> 40) & 0xFF )))" >> tmp_patch.bin; \
+	 printf "$$(printf '\\x%02x' $$(( ($$filesize >> 48) & 0xFF )))" >> tmp_patch.bin; \
+	 printf "$$(printf '\\x%02x' $$(( ($$filesize >> 56) & 0xFF )))" >> tmp_patch.bin; \
+	 dd if=tmp_patch.bin of=$@ bs=1 seek=16 count=8 conv=notrunc status=none; \
+	 rm tmp_patch.bin
+
 # 5. create flash img
 $(PFLASH_BIN): $(BOOT_BIN) $(KERNEL_IMG)
 	@echo "==> Création image pflash (64 MiB)"

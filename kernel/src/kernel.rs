@@ -10,6 +10,10 @@ use core::panic::PanicInfo;
 // we need this in the case we write the same char twice and because of compiler opti
 use core::ptr::write_volatile;
 
+#[unsafe(no_mangle)]
+#[unsafe(link_section = ".text.header")]
+pub static ARM64_HEADER: header::Arm64Header = header::Arm64Header::new();
+
 const UART: *mut u8 = 0x0900_0000 as *mut u8;
 
 #[unsafe(no_mangle)]

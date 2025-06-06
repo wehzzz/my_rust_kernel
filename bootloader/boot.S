@@ -4,7 +4,7 @@
 .section ".text._start"
 .global _start
 
-.equ KERNEL_SIZE, 360
+.equ KERNEL_SIZE, 440
 .equ FLASH_KERNEL_ADDR,  0x000100000
 .equ RAM_KERNEL_ADDR,      0x40080000
 .equ STACK_TOP, 0x40000000

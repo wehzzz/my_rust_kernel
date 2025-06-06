@@ -1,7 +1,10 @@
 [target.aarch64-unknown-none]
 linker = "ld"
 rustflags = [
-  "-C", "link-arg=-Tlinker.ld",
-  "-C", "link-arg=-nostartfiles",
+  "-C",
+  "link-arg=-Tlinker.ld",
+  "-C",
+  "link-arg=-nostartfiles",
+  "-C",
+  "target-feature=+strict-align,+a53,+fp-armv8,+neon",
 ]
-
