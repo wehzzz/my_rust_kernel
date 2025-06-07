@@ -4,10 +4,9 @@
 .section ".text._start"
 .global _start
 
-.equ KERNEL_SIZE, 440
-.equ FLASH_KERNEL_ADDR,  0x000100000
-.equ RAM_KERNEL_ADDR,      0x40080000
-.equ STACK_TOP, 0x40000000
+.equ FLASH_KERNEL_ADDR,   0x000100000
+.equ RAM_KERNEL_ADDR,     0x40080000
+.equ STACK_TOP,           0x40000000
 
 _start:
     ldr x30, =STACK_TOP
@@ -19,7 +18,7 @@ _start:
 _kernel_copy:
     ldr x0, =FLASH_KERNEL_ADDR
     ldr x1, =RAM_KERNEL_ADDR
-    ldr x2, =KERNEL_SIZE
+    ldr x2, [x0, #16]               // Get KERNEL_SIZE from kernel header
 1:
     ldr x3, [x0], #8
     str x3, [x1], #8
