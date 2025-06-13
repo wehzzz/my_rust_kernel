@@ -17,7 +17,7 @@ pub static ARM64_HEADER: header::Arm64Header = header::Arm64Header::new();
 const UART: *mut u8 = 0x0900_0000 as *mut u8;
 
 #[unsafe(no_mangle)]
-pub extern "C" fn kmain() -> ! {
+pub extern "C" fn _start() -> ! {
     print(b"Hello, from Rust!\n");
     loop {
     }

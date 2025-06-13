@@ -1,4 +1,4 @@
-ENTRY(kmain)
+ENTRY(_start)
 OUTPUT_FORMAT(elf64-littleaarch64)
 OUTPUT_ARCH(aarch64)
 
@@ -39,6 +39,10 @@ SECTIONS {
     TTBR1_SPACE = .;
     . += 8192*8;
     TTBR1_SPACE_END = .;
+
+    . = ALIGN(8);
+    . += 0x1000;
+    stack_top = .;
 
     . = ALIGN(8);
     . = 0x7fff0000;
