@@ -5,41 +5,35 @@
 mod config;
 
 use config::header;
+use config::uart;
 // use the panic handler
 use core::panic::PanicInfo;
-// we need this in the case we write the same char twice and because of compiler opti
-use core::ptr::write_volatile;
 
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.header")]
 pub static ARM64_HEADER: header::Arm64Header = header::Arm64Header::new();
 
-const UART: *mut u8 = 0x0900_0000 as *mut u8;
-
 #[unsafe(no_mangle)]
-pub extern "C" fn _start() -> ! {
-    print(b"Hello, from Rust!\n");
+pub extern "C" fn _start(dtb_addr: u64, _reserved1: u64, _reserved2: u64, _reserved3: u64) -> ! {
+    kmain(dtb_addr);
+}
+
+fn kmain(dtb_addr: u64) -> ! {
+    if dtb_addr != 0 {
+        uart::print(b"DTB found at: 0x");
+        uart::print_hex(dtb_addr);
+        uart::print(b"\n");
+    } else {
+        uart::print(b"Warning: No DTB provided\n");
+    }
+    uart::print(b"Kernel initialization complete\n");
     loop {
-    }
-}
-
-fn putchar(c: u8) {
-    unsafe {
-        let uart_fr = ((UART as usize) + 0x18) as *const u32; // UART Flag Register
-        while (*uart_fr & (1 << 5)) != 0 {} // Attendre que le FIFO de transmission soit vide
-        write_volatile(UART, c);
-    }
-}
-
-fn print(s: &[u8]) {
-    for &c in s {
-        putchar(c);
     }
 }
 
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
-    print(b"Panic!\n");
+    uart::print(b"Panic!\n");
     loop {
     }
 }
