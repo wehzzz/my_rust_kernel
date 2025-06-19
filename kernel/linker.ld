@@ -31,9 +31,4 @@ SECTIONS {
         *(COMMON)
         __bss_end = .;
     }
-
-    . = ALIGN(4096);
-    stack_bottom = .;
-    . += 0x10000;
-    stack_top = .;
 }
