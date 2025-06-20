@@ -90,8 +90,10 @@ $(PFLASH_BIN): $(BOOT_BIN) $(KERNEL_IMG)
 
 run: $(PFLASH_BIN)
 	@echo "==> Démarrage QEMU depuis pflash"
-	$(QEMU) -M virt -cpu cortex-a53 -nographic \
-	        -drive if=pflash,format=raw,file=$(PFLASH_BIN)
+	$(QEMU) -M virt,virtualization=on,gic-version=3 \
+			-cpu cortex-a53 \
+			-nographic \
+			-drive if=pflash,format=raw,file=$(PFLASH_BIN)
 
 clean:
 	@echo "==> Nettoyage"
